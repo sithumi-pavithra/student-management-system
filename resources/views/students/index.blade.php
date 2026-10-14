@@ -79,6 +79,28 @@
             </div>
         </div>
 
+        {{-- STUDENT CHARTS --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
+                <div class="mb-5">
+                    <h2 class="text-base font-semibold text-gray-800">Students by course</h2>
+                    <p class="mt-1 text-sm text-gray-500">Current student distribution across courses</p>
+                </div>
+                <div class="relative h-72">
+                    <canvas id="courseStudentsChart" aria-label="Bar chart showing students by course"></canvas>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
+                <div class="mb-5">
+                    <h2 class="text-base font-semibold text-gray-800">Students by status</h2>
+                    <p class="mt-1 text-sm text-gray-500">Overview of active, inactive, graduated, and suspended students</p>
+                </div>
+                <div class="relative h-72">
+                    <canvas id="studentStatusChart" aria-label="Doughnut chart showing students by status"></canvas>
+                </div>
+            </section>
+        </div>
         {{-- SEARCH + FILTER + TABLE --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
 
@@ -151,7 +173,7 @@
                                         </div>
                                     @endif
                                     <div>
-                                        <p class="text-sm font-semibold text-gray-800">{{ $student->name }}</p>
+                                        <a href="{{ route('students.show', $student->id) }}" class="text-sm font-semibold text-gray-800 hover:text-indigo-600">{{ $student->name }}</a>
                                         <p class="text-xs text-gray-500">{{ $student->email }}</p>
                                     </div>
                                 </div>
@@ -429,7 +451,7 @@
                                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition">
                     </div>
 
-                    {{-- PHONE ⭐ FIXED — only ONE input now ⭐ --}}
+                    {{-- PHONE FIXED — only ONE input now  --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-phone text-blue-500 mr-1"></i> Phone *
@@ -514,6 +536,80 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const courseCanvas = document.getElementById('courseStudentsChart');
+        const statusCanvas = document.getElementById('studentStatusChart');
+
+        if (courseCanvas) {
+            new Chart(courseCanvas, {
+                type: 'bar',
+                data: {
+                    labels: @json($courseStats->pluck('course')),
+                    datasets: [{
+                        label: 'Students',
+                        data: @json($courseStats->pluck('total')),
+                        backgroundColor: '#5865d8',
+                        borderRadius: 7,
+                        maxBarThickness: 44
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#667085' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, color: '#667085' },
+                            grid: { color: '#edf0f5' }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (statusCanvas) {
+            new Chart(statusCanvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'Inactive', 'Graduated', 'Suspended'],
+                    datasets: [{
+                        data: [
+                            @json($stats['active']),
+                            @json($stats['inactive'] ?? 0),
+                            @json($stats['graduated']),
+                            @json($stats['suspended'] ?? 0)
+                        ],
+                        backgroundColor: ['#16a36a', '#e8a317', '#3976df', '#dc4b4b'],
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 18, color: '#526078' }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
 <script>
     //  ADD MODAL 
     function openAddModal() {

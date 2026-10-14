@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
+    // STUDENT PROFILE
+    public function show($id)
+    {
+        $student = Student::findOrFail($id);
+
+        return view('students.show', compact('student'));
+    }
     //  LIST
     public function index(Request $request)
     {
@@ -39,11 +46,19 @@ class StudentController extends Controller
         $stats = [
             'total'     => Student::count(),
             'active'    => Student::where('status', 'active')->count(),
+            'inactive'  => Student::where('status', 'inactive')->count(),
+            'suspended' => Student::where('status', 'suspended')->count(),
             'graduated' => Student::where('status', 'graduated')->count(),
             'trashed'   => Student::onlyTrashed()->count(),
         ];
 
-        return view('students.index', compact('students', 'courses', 'stats'));
+        $courseStats = Student::query()
+            ->selectRaw('course, COUNT(*) as total')
+            ->groupBy('course')
+            ->orderBy('course')
+            ->get();
+
+        return view('students.index', compact('students', 'courses', 'stats', 'courseStats'));
     }
 
     // STORE (from modal)
