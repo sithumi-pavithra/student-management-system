@@ -1,0 +1,89 @@
+/* ==========================================
+   Student Management System - Main Stylesheet
+   ========================================== */
+
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Login Page */
+.login-bg {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+}
+
+.login-card {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+/* Form Inputs */
+.form-input:focus {
+    border-color: #4F46E5;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Sidebar & Tables */
+.sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.table-row:hover {
+    background: #F9FAFB;
+}
+
+/* Card Hover */
+.card-hover {
+    transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   MODAL ANIMATIONS
+   ============================================ */
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes backdropFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+#addStudentModal {
+    animation: backdropFadeIn 0.2s ease-out;
+}
+
+#addStudentModal > div {
+    animation: modalFadeIn 0.25s ease-out;
+}
+
+/* Modal scrollbar */
+#addStudentModal ::-webkit-scrollbar {
+    width: 8px;
+}
+
+#addStudentModal ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#addStudentModal ::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 4px;
+}
+
+#addStudentModal ::-webkit-scrollbar-thumb:hover {
+    background: #818cf8;
+}
