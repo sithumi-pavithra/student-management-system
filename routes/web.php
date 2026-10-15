@@ -11,10 +11,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // PROTECTED ROUTES 
 Route::middleware(['auth'])->group(function () {
-
+    
     // Trash (literal — first)
     Route::get('/students/trash', [StudentController::class, 'trash'])->name('students.trash');
-
+Route::get('/students/export', [StudentController::class, 'export'])
+    ->name('students.export');
     // Collection
     Route::get ('/students', [StudentController::class, 'index'])->name('students.index');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');

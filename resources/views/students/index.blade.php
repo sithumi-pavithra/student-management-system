@@ -25,6 +25,10 @@
                         class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-lg shadow-indigo-200">
                     <i class="fas fa-plus"></i> Add New Student
                 </button>
+                <a href="{{ route('students.export', request()->query()) }}"
+   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+    <i class="fas fa-download"></i> Export CSV
+</a>
             </div>
         </div>
 
