@@ -60,7 +60,7 @@
                                 </span>
                             </td>
                             
-                            {{-- ⭐ Status (Combined: Status + Deleted) ⭐ --}}
+                            {{-- Status (Combined: Status + Deleted) --}}
                             <td class="px-6 py-4">
                                 <span class="px-3 py-1 {{ $student->overall_status_badge_class }} rounded-full text-xs font-medium border">
                                     {{ $student->overall_status_label }}

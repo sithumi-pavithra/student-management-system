@@ -1,6 +1,5 @@
-/* ==========================================
-   Student Management System - Main Stylesheet
-   ========================================== */
+/*
+   Student Management System - Main Stylesheet */
 
 * {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -42,9 +41,9 @@
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* ============================================
+/* 
    MODAL ANIMATIONS
-   ============================================ */
+    */
 
 @keyframes modalFadeIn {
     from {

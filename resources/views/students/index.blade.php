@@ -32,7 +32,7 @@
             </div>
         </div>
 
-        {{-- ═══════════════ STATS CARDS ═══════════════ --}}
+        {{--  STATS CARDS  --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                 <div class="flex justify-between items-start">
@@ -244,9 +244,9 @@
 
     </div>
 
-    {{-- ═══════════════════════════════════════════════════════════
+    {{-- 
          ADD STUDENT MODAL
-         ═══════════════════════════════════════════════════════════ --}}
+          --}}
     <div id="addStudentModal"
          class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
          onclick="closeAddModal(event)">
@@ -309,7 +309,7 @@
                                placeholder="student@example.com">
                     </div>
 
-                    {{-- PHONE ⭐ FIXED ⭐ --}}
+                    {{-- PHONE FIXED --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-phone text-indigo-500 mr-1"></i> Phone *
@@ -394,9 +394,9 @@
         </div>
     </div>
 
-    {{-- ═══════════════════════════════════════════════════════════
+    {{-- 
          EDIT STUDENT MODAL
-         ═══════════════════════════════════════════════════════════ --}}
+         --}}
     <div id="editStudentModal"
          class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
          onclick="closeEditModal(event)">
@@ -716,7 +716,7 @@
         }
     }
 
-    // ═══════════════ ESC KEY ═══════════════
+    //  ESC KEY 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             const addModal = document.getElementById('addStudentModal');

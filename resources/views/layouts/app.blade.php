@@ -23,14 +23,14 @@
 </head>
 <body class="@yield('body-class', 'bg-gray-50')">
 
-    {{-- ═══════════════ NAV BAR ═══════════════ --}}
+    {{--  NAV BAR --}}
     @hasSection('hide-nav')
         {{-- Login page: no nav --}}
     @else
         @include('partials.nav')
     @endif
 
-    {{-- ═══════════════ FLASH MESSAGES ═══════════════ --}}
+    {{-- FLASH MESSAGES --}}
     @if(session('success'))
         <div class="container mx-auto px-6 pt-6">
             <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg flex items-center gap-3">
@@ -40,10 +40,10 @@
         </div>
     @endif
 
-    {{-- ═══════════════ MAIN CONTENT ═══════════════ --}}
+    {{--  MAIN CONTENT  --}}
     @yield('content')
 
-    {{-- ═══════════════ PAGE JS ═══════════════ --}}
+    {{--  PAGE JS  --}}
     @stack('scripts')
 
 </body>
