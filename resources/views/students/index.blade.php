@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('title', 'Students List - Student Management')
@@ -21,7 +22,7 @@
 @section('content')
 <div class="container py-4">
 
-    {{-- HEADER --}}
+    
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <h1 class="h2 fw-bold mb-1">Students List</h1>
@@ -64,7 +65,7 @@
         @endforeach
     </div>
 
-    {{-- SEARCH + FILTER + TABLE --}}
+   
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex flex-column flex-lg-row justify-content-between gap-3 py-3">
             <div>
@@ -159,7 +160,7 @@
                         </td>
                         <td>
                             <div class="d-flex gap-2">
-                                {{-- VIEW --}}
+                                
                                 <button type="button" class="btn btn-outline-info btn-sm view-btn"
                                         data-bs-toggle="modal"
                                         data-bs-target="#viewStudentModal"
@@ -178,7 +179,7 @@
                                     <i class="fas fa-eye"></i>
                                 </button>
 
-                                {{-- EDIT --}}
+                                
                                 <button type="button" class="btn btn-outline-primary btn-sm edit-btn"
                                         data-bs-toggle="modal"
                                         data-bs-target="#editStudentModal"
@@ -194,7 +195,7 @@
                                     <i class="fas fa-edit"></i>
                                 </button>
 
-                                {{-- DELETE --}}
+                               
                                 <form method="POST"
                                       action="{{ route('students.destroy', $student->id) }}"
                                       onsubmit="return confirm('Move to trash?')">
@@ -238,7 +239,7 @@
 
             <div class="modal-body">
 
-                {{-- Profile --}}
+                
                 <div class="text-center mb-4">
                     <div id="viewImageWrap">
                         <img id="viewImage" src="" alt="Student"
@@ -257,7 +258,7 @@
                     <span id="viewStatus" class="badge rounded-pill">Status</span>
                 </div>
 
-                {{-- Details --}}
+                
                 <div>
                     <div class="student-detail-item">
                         <span class="label"><i class="fas fa-phone"></i>Phone</span>
