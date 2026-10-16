@@ -647,7 +647,7 @@
         }
     }
 
-    // ═══════════════ EDIT MODAL ═══════════════
+    // EDIT MODAL 
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', function() {
