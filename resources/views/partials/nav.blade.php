@@ -1,35 +1,39 @@
-<nav class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg sticky top-0 z-40">
-    <div class="container mx-auto px-6 py-4">
-        <div class="flex justify-between items-center">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+    <div class="container">
 
-            {{-- Logo --}}
-            <a href="{{ route('students.index') }}" class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-graduation-cap text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold">Student Management</h1>
-                    <p class="text-xs text-indigo-200">Admin Panel</p>
-                </div>
-            </a>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('students.index') }}">
+            <div class="bg-white bg-opacity-25 rounded-3 d-flex align-items-center justify-content-center"
+                 style="width: 40px; height: 40px;">
+                <i class="fas fa-graduation-cap text-white"></i>
+            </div>
+            <div>
+                <div class="fw-bold lh-1">Student Management</div>
+                <small class="text-white-50" style="font-size: 0.7rem;">Admin Panel</small>
+            </div>
+        </a>
 
-            {{-- User + Logout --}}
-            <div class="flex items-center gap-4">
-                <div class="text-right hidden md:block">
-                    <p class="text-sm font-medium">{{ auth()->user()->name ?? 'Admin' }}</p>
-                    <p class="text-xs text-indigo-200">Administrator</p>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <div class="text-end d-none d-lg-block">
+                    <div class="fw-semibold lh-1">{{ auth()->user()->name ?? 'Admin' }}</div>
+                    <small class="text-white-50">Administrator</small>
                 </div>
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center"
+                     style="width: 40px; height: 40px;">
                     <i class="fas fa-user-shield"></i>
                 </div>
-                <form method="POST" action="{{ route('logout') }}" class="inline">
+                <form method="POST" action="{{ route('logout') }}" class="d-inline">
                     @csrf
-                    <button type="submit" 
-                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
-                        <i class="fas fa-sign-out-alt"></i> Logout
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-sign-out-alt me-1"></i> Logout
                     </button>
                 </form>
             </div>
         </div>
+
     </div>
 </nav>

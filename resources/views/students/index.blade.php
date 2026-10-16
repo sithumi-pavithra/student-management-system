@@ -2,739 +2,557 @@
 
 @section('title', 'Students List - Student Management')
 
+@php
+    $statuses = [
+        'active'    => 'Active',
+        'inactive'  => 'Inactive',
+        'graduated' => 'Graduated',
+        'suspended' => 'Suspended',
+    ];
+
+    $cards = [
+        ['Total',     $stats['total'],     'primary', 'fa-users'],
+        ['Active',    $stats['active'],    'success', 'fa-user-check'],
+        ['Graduated', $stats['graduated'], 'info',    'fa-graduation-cap'],
+        ['Trashed',   $stats['trashed'],   'danger',  'fa-trash'],
+    ];
+@endphp
+
 @section('content')
-    <div class="container mx-auto px-6 py-8">
+<div class="container py-4">
 
-        {{-- HEADER  --}}
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    {{-- HEADER --}}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h1 class="h2 fw-bold mb-1">Students List</h1>
+            <p class="text-muted mb-0">Manage all registered students</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('students.trash') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-trash"></i> Trash
+                @if($stats['trashed'] > 0)
+                    <span class="badge bg-light text-dark">{{ $stats['trashed'] }}</span>
+                @endif
+            </a>
+            <button type="button" class="btn btn-primary btn-sm"
+                    data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                <i class="fas fa-plus"></i> Add New Student
+            </button>
+            <a href="{{ route('students.export', request()->query()) }}" class="btn btn-success btn-sm">
+                <i class="fas fa-download"></i> Export CSV
+            </a>
+        </div>
+    </div>
+
+    {{-- STATS CARDS --}}
+    <div class="row g-3 mb-4">
+        @foreach($cards as [$label, $value, $color, $icon])
+            <div class="col-6 col-md-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body d-flex justify-content-between align-items-start">
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold">{{ $label }}</small>
+                            <div class="fs-3 fw-bold text-{{ $color }}">{{ $value }}</div>
+                        </div>
+                        <div class="bg-{{ $color }} bg-opacity-10 text-{{ $color }} rounded d-flex align-items-center justify-content-center"
+                             style="width:40px;height:40px">
+                            <i class="fas {{ $icon }}"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- SEARCH + FILTER + TABLE --}}
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex flex-column flex-lg-row justify-content-between gap-3 py-3">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">🎓 Students List</h1>
-                <p class="text-gray-500 mt-1">Manage all registered students</p>
+                <h2 class="h5 mb-0">All Students</h2>
+                <small class="text-muted">{{ $students->total() }} registered students</small>
             </div>
-            <div class="flex gap-2">
-                <a href="{{ route('students.trash') }}"
-                   class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
-                    <i class="fas fa-trash"></i> Trash
-                    @if($stats['trashed'] > 0)
-                        <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
-                            {{ $stats['trashed'] }}
-                        </span>
-                    @endif
-                </a>
-                <button type="button" onclick="openAddModal()"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-lg shadow-indigo-200">
-                    <i class="fas fa-plus"></i> Add New Student
-                </button>
-                <a href="{{ route('students.export', request()->query()) }}"
-   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-    <i class="fas fa-download"></i> Export CSV
-</a>
-            </div>
+
+            <form method="GET" action="{{ route('students.index') }}"
+                  class="d-flex flex-column flex-sm-row gap-2">
+                <input type="search" name="search" value="{{ request('search') }}"
+                       class="form-control form-control-sm" placeholder="Search name, email, phone">
+
+                <select name="course" class="form-select form-select-sm">
+                    <option value="">All courses</option>
+                    @foreach($courses as $course)
+                        <option value="{{ $course }}" @selected(request('course') === $course)>{{ $course }}</option>
+                    @endforeach
+                </select>
+
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All statuses</option>
+                    @foreach($statuses as $value => $label)
+                        <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+
+                <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+
+                @if(request()->filled('search') || request()->filled('course') || request()->filled('status'))
+                    <a href="{{ route('students.index') }}" class="btn btn-link btn-sm text-decoration-none">Clear</a>
+                @endif
+            </form>
         </div>
 
-        {{--  STATS CARDS  --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs text-gray-500 font-medium uppercase">Total</p>
-                        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['total'] }}</p>
-                    </div>
-                    <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-users text-indigo-600"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs text-gray-500 font-medium uppercase">Active</p>
-                        <p class="text-2xl font-bold text-green-600 mt-1">{{ $stats['active'] }}</p>
-                    </div>
-                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-user-check text-green-600"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs text-gray-500 font-medium uppercase">Graduated</p>
-                        <p class="text-2xl font-bold text-blue-600 mt-1">{{ $stats['graduated'] }}</p>
-                    </div>
-                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-graduation-cap text-blue-600"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs text-gray-500 font-medium uppercase">Trashed</p>
-                        <p class="text-2xl font-bold text-red-600 mt-1">{{ $stats['trashed'] }}</p>
-                    </div>
-                    <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-trash text-red-600"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- STUDENT CHARTS --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
-                <div class="mb-5">
-                    <h2 class="text-base font-semibold text-gray-800">Students by course</h2>
-                    <p class="mt-1 text-sm text-gray-500">Current student distribution across courses</p>
-                </div>
-                <div class="relative h-72">
-                    <canvas id="courseStudentsChart" aria-label="Bar chart showing students by course"></canvas>
-                </div>
-            </section>
-
-            <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sm:p-6">
-                <div class="mb-5">
-                    <h2 class="text-base font-semibold text-gray-800">Students by status</h2>
-                    <p class="mt-1 text-sm text-gray-500">Overview of active, inactive, graduated, and suspended students</p>
-                </div>
-                <div class="relative h-72">
-                    <canvas id="studentStatusChart" aria-label="Doughnut chart showing students by status"></canvas>
-                </div>
-            </section>
-        </div>
-        {{-- SEARCH + FILTER + TABLE --}}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-
-            <div class="px-6 py-4 border-b border-gray-100 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-800">All Students</h2>
-                    <p class="text-xs text-gray-500">{{ $students->total() }} registered students</p>
-                </div>
-
-                <form method="GET" action="{{ route('students.index') }}" class="flex flex-col sm:flex-row gap-2">
-                    <input type="search" name="search" value="{{ request('search') }}"
-                           placeholder="Search name, email, phone"
-                           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-
-                    <select name="course"
-                            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-                        <option value="">All courses</option>
-                        @foreach($courses as $course)
-                            <option value="{{ $course }}" @selected(request('course') === $course)>{{ $course }}</option>
-                        @endforeach
-                    </select>
-
-                    <select name="status"
-                            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-                        <option value="">All statuses</option>
-                        <option value="active"    @selected(request('status') === 'active')>🟢 Active</option>
-                        <option value="inactive"  @selected(request('status') === 'inactive')>🟡 Inactive</option>
-                        <option value="graduated" @selected(request('status') === 'graduated')>🔵 Graduated</option>
-                        <option value="suspended" @selected(request('status') === 'suspended')>🔴 Suspended</option>
-                    </select>
-
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        Apply
-                    </button>
-
-                    @if(request()->filled('search') || request()->filled('course') || request()->filled('status'))
-                        <a href="{{ route('students.index') }}" class="px-3 py-2 text-sm text-gray-600 hover:text-indigo-600">
-                            Clear
-                        </a>
-                    @endif
-                </form>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Student</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Contact</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Course</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @forelse($students as $student)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-500">
-                                {{ $students->firstItem() + $loop->index }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    @if($student->image)
-                                        <img src="{{ asset('storage/' . $student->image) }}"
-                                             class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-100">
-                                    @else
-                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                                            {{ strtoupper(substr($student->name, 0, 1)) }}
-                                        </div>
-                                    @endif
-                                    <div>
-                                        <a href="{{ route('students.show', $student->id) }}" class="text-sm font-semibold text-gray-800 hover:text-indigo-600">{{ $student->name }}</a>
-                                        <p class="text-xs text-gray-500">{{ $student->email }}</p>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Student</th>
+                        <th>Contact</th>
+                        <th>Course</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @forelse($students as $student)
+                    <tr>
+                        <td class="text-muted">{{ $students->firstItem() + $loop->index }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                @if($student->image)
+                                    <img src="{{ asset('storage/' . $student->image) }}"
+                                         class="rounded-circle object-fit-cover"
+                                         style="width:40px;height:40px" alt="{{ $student->name }}">
+                                @else
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-semibold"
+                                         style="width:40px;height:40px">
+                                        {{ strtoupper(substr($student->name, 0, 1)) }}
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-700">{{ $student->phone }}</td>
-                            <td class="px-6 py-4">
-                                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
-                                    {{ $student->course }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-3 py-1 {{ $student->status_badge_class }} rounded-full text-xs font-medium border">
-                                    {{ $student->status_label }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex gap-2">
+                                @endif
+                                <div>
+                                    {{-- Name click → View Modal --}}
                                     <button type="button"
-                                            class="edit-btn w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition"
+                                            class="btn btn-link p-0 fw-semibold text-decoration-none view-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#viewStudentModal"
                                             data-id="{{ $student->id }}"
                                             data-name="{{ $student->name }}"
                                             data-email="{{ $student->email }}"
                                             data-phone="{{ $student->phone }}"
                                             data-course="{{ $student->course }}"
                                             data-status="{{ $student->status }}"
+                                            data-status-label="{{ $student->status_label }}"
+                                            data-status-badge="{{ $student->status_badge_class }}"
                                             data-address="{{ $student->address }}"
                                             data-image="{{ $student->image ? asset('storage/' . $student->image) : '' }}"
-                                            title="Edit">
-                                        <i class="fas fa-edit text-sm"></i>
+                                            data-created="{{ $student->created_at->format('M d, Y') }}">
+                                        {{ $student->name }}
                                     </button>
-
-                                    <form method="POST"
-                                          action="{{ route('students.destroy', $student->id) }}"
-                                          class="inline"
-                                          onsubmit="return confirm('Move to trash?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="w-8 h-8 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition"
-                                                title="Delete">
-                                            <i class="fas fa-trash-alt text-sm"></i>
-                                        </button>
-                                    </form>
+                                    <div class="small text-muted">{{ $student->email }}</div>
                                 </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-16 text-center">
-                                <div class="text-6xl mb-4">📭</div>
-                                <p class="text-gray-500 font-medium">No students found</p>
-                                <p class="text-sm text-gray-400 mt-1">Click "Add New Student" to get started</p>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                            </div>
+                        </td>
+                        <td>{{ $student->phone }}</td>
+                        <td><span class="badge rounded-pill text-bg-primary">{{ $student->course }}</span></td>
+                        <td>
+                            <span class="badge rounded-pill {{ $student->status_badge_class }}">
+                                {{ $student->status_label }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                {{-- VIEW --}}
+                                <button type="button" class="btn btn-outline-info btn-sm view-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#viewStudentModal"
+                                        data-id="{{ $student->id }}"
+                                        data-name="{{ $student->name }}"
+                                        data-email="{{ $student->email }}"
+                                        data-phone="{{ $student->phone }}"
+                                        data-course="{{ $student->course }}"
+                                        data-status="{{ $student->status }}"
+                                        data-status-label="{{ $student->status_label }}"
+                                        data-status-badge="{{ $student->status_badge_class }}"
+                                        data-address="{{ $student->address }}"
+                                        data-image="{{ $student->image ? asset('storage/' . $student->image) : '' }}"
+                                        data-created="{{ $student->created_at->format('M d, Y') }}"
+                                        title="View">
+                                    <i class="fas fa-eye"></i>
+                                </button>
 
-        <div class="mt-6">
-            {{ $students->links() }}
-        </div>
+                                {{-- EDIT --}}
+                                <button type="button" class="btn btn-outline-primary btn-sm edit-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editStudentModal"
+                                        data-id="{{ $student->id }}"
+                                        data-name="{{ $student->name }}"
+                                        data-email="{{ $student->email }}"
+                                        data-phone="{{ $student->phone }}"
+                                        data-course="{{ $student->course }}"
+                                        data-status="{{ $student->status }}"
+                                        data-address="{{ $student->address }}"
+                                        data-image="{{ $student->image ? asset('storage/' . $student->image) : '' }}"
+                                        title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
 
+                                {{-- DELETE --}}
+                                <form method="POST"
+                                      action="{{ route('students.destroy', $student->id) }}"
+                                      onsubmit="return confirm('Move to trash?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <p class="text-muted fw-medium mb-0">No students found</p>
+                            <small class="text-muted">Click "Add New Student" to get started</small>
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    {{-- 
-         ADD STUDENT MODAL
-          --}}
-    <div id="addStudentModal"
-         class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-         onclick="closeAddModal(event)">
+    <div class="mt-4">
+        {{ $students->links('pagination::bootstrap-5') }}
+    </div>
+</div>
 
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-             onclick="event.stopPropagation()">
+<div class="modal fade" id="viewStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
-            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-6 flex justify-between items-center sticky top-0 z-10">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-user-plus text-2xl"></i>
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-circle me-2"></i>Student Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                {{-- Profile --}}
+                <div class="text-center mb-4">
+                    <div id="viewImageWrap">
+                        <img id="viewImage" src="" alt="Student"
+                             class="rounded-circle object-fit-cover border border-3 border-info"
+                             style="width:100px;height:100px">
                     </div>
-                    <div>
-                        <h2 class="text-xl font-bold">Add New Student</h2>
-                        <p class="text-xs text-indigo-200">Fill in the details below</p>
+                    <div id="viewInitialWrap" class="d-none">
+                        <div id="viewInitial"
+                             class="rounded-circle bg-info text-white d-inline-flex align-items-center justify-content-center fw-bold"
+                             style="width:100px;height:100px;font-size:2.5rem">
+                            A
+                        </div>
+                    </div>
+                    <h4 id="viewName" class="mt-3 mb-1 fw-bold">Student Name</h4>
+                    <p id="viewEmail" class="text-muted small mb-2">student@example.com</p>
+                    <span id="viewStatus" class="badge rounded-pill">Status</span>
+                </div>
+
+                {{-- Details --}}
+                <div>
+                    <div class="student-detail-item">
+                        <span class="label"><i class="fas fa-phone"></i>Phone</span>
+                        <span id="viewPhone" class="value">-</span>
+                    </div>
+
+                    <div class="student-detail-item">
+                        <span class="label"><i class="fas fa-book"></i>Course</span>
+                        <span id="viewCourse" class="value">-</span>
+                    </div>
+
+                    <div class="student-detail-item">
+                        <span class="label"><i class="fas fa-map-marker-alt"></i>Address</span>
+                        <span id="viewAddress" class="value text-end" style="max-width:60%">-</span>
+                    </div>
+
+                    <div class="student-detail-item">
+                        <span class="label"><i class="far fa-calendar"></i>Registered</span>
+                        <span id="viewCreated" class="value">-</span>
                     </div>
                 </div>
-                <button type="button" onclick="closeAddModal({ force: true })"
-                        class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition">
-                    <i class="fas fa-times text-lg"></i>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button type="button" class="btn btn-primary" id="viewEditBtn">
+                    <i class="fas fa-edit"></i> Edit
                 </button>
             </div>
 
-            <form method="POST" action="{{ route('students.store') }}" enctype="multipart/form-data" class="p-8">
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Add New Student
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form method="POST" action="{{ route('students.store') }}" enctype="multipart/form-data">
                 @csrf
 
-                @if($errors->any() && !old('_method'))
-                    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i class="fas fa-exclamation-circle text-red-500"></i>
-                            <span class="font-semibold">Please fix the following errors:</span>
+                <div class="modal-body">
+
+                    @if($errors->any() && !old('_method'))
+                        <div class="alert alert-danger">
+                            <strong><i class="fas fa-exclamation-circle me-1"></i>Please fix the following errors:</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
                         </div>
-                        <ul class="list-disc pl-8 text-sm">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                    @endif
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-user text-primary me-1"></i> Full Name *</label>
+                            <input type="text" name="name" value="{{ old('name') }}"
+                                   class="form-control" placeholder="Enter student name" required>
+                        </div>
 
-                    {{-- NAME --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user text-indigo-500 mr-1"></i> Full Name *
-                        </label>
-                        <input type="text" name="name" value="{{ old('name') }}" required
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
-                               placeholder="Enter student name">
-                    </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-envelope text-primary me-1"></i> Email *</label>
+                            <input type="email" name="email" value="{{ old('email') }}"
+                                   class="form-control" placeholder="student@example.com" required>
+                        </div>
 
-                    {{-- EMAIL --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-envelope text-indigo-500 mr-1"></i> Email *
-                        </label>
-                        <input type="email" name="email" value="{{ old('email') }}" required
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
-                               placeholder="student@example.com">
-                    </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-phone text-primary me-1"></i> Phone *</label>
+                            <input type="text" name="phone" value="{{ old('phone') }}"
+                                   class="form-control" placeholder="0712345678"
+                                   pattern="[0-9]{10}" maxlength="10" inputmode="numeric"
+                                   title="Please enter exactly 10 digits" required>
+                        </div>
 
-                    {{-- PHONE FIXED --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-phone text-indigo-500 mr-1"></i> Phone *
-                        </label>
-                        <input type="text" 
-                               name="phone" 
-                               value="{{ old('phone') }}" 
-                               required
-                               pattern="[0-9]{10}"
-                               maxlength="10"
-                               title="Please enter exactly 10 digits"
-                               inputmode="numeric"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
-                               placeholder="0712345678">
-                    </div>
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-book text-primary me-1"></i> Course *</label>
+                            <input type="text" name="course" value="{{ old('course') }}"
+                                   class="form-control" placeholder="e.g., HNDIT, HNDA" required>
+                        </div>
 
-                    {{-- COURSE --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-book text-indigo-500 mr-1"></i> Course *
-                        </label>
-                        <input type="text" name="course" value="{{ old('course') }}" required
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
-                               placeholder="e.g., HNDIT, HNDA">
-                    </div>
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-flag text-primary me-1"></i> Status *</label>
+                            <select name="status" class="form-select" required>
+                                @foreach($statuses as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('status', 'active') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                    {{-- STATUS --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-flag text-indigo-500 mr-1"></i> Status *
-                        </label>
-                        <select name="status" required
-                                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition">
-                            <option value="active"    @selected(old('status', 'active') === 'active')>🟢 Active</option>
-                            <option value="inactive"  @selected(old('status') === 'inactive')>🟡 Inactive</option>
-                            <option value="graduated" @selected(old('status') === 'graduated')>🔵 Graduated</option>
-                            <option value="suspended" @selected(old('status') === 'suspended')>🔴 Suspended</option>
-                        </select>
-                    </div>
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-image text-primary me-1"></i> Profile Image</label>
+                            <input type="file" name="image" class="form-control" accept="image/*">
+                            <div class="form-text">JPG, PNG up to 2MB</div>
+                        </div>
 
-                    {{-- IMAGE --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-image text-indigo-500 mr-1"></i> Profile Image
-                        </label>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition">
-                            <input type="file" name="image" id="create_imageInput" accept="image/*"
-                                   class="hidden" onchange="showCreateFileName()">
-                            <label for="create_imageInput" class="cursor-pointer">
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-500">Click to upload</p>
-                                <p class="text-xs text-gray-400 mt-1">JPG, PNG up to 2MB</p>
-                            </label>
-                            <p id="create_fileName" class="text-sm text-indigo-600 font-medium mt-2"></p>
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-map-marker-alt text-primary me-1"></i> Address</label>
+                            <textarea name="address" rows="3" class="form-control"
+                                      placeholder="Enter address">{{ old('address') }}</textarea>
                         </div>
                     </div>
-
-                    {{-- ADDRESS --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map-marker-alt text-indigo-500 mr-1"></i> Address
-                        </label>
-                        <textarea name="address" rows="3"
-                                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 focus:outline-none transition"
-                                  placeholder="Enter address">{{ old('address') }}</textarea>
-                    </div>
-
                 </div>
 
-                <div class="flex gap-3 mt-8 pt-6 border-t border-gray-100">
-                    <button type="submit"
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition shadow-lg shadow-indigo-200">
-                        <i class="fas fa-save"></i> Save Student
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
                     </button>
-                    <button type="button" onclick="closeAddModal({ force: true })"
-                            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-lg font-medium transition">
-                        Cancel
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Student
                     </button>
                 </div>
             </form>
 
         </div>
     </div>
+</div>
 
-    {{-- 
-         EDIT STUDENT MODAL
-         --}}
-    <div id="editStudentModal"
-         class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-         onclick="closeEditModal(event)">
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-             onclick="event.stopPropagation()">
-
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-6 flex justify-between items-center sticky top-0 z-10">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-user-edit text-2xl"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-xl font-bold">Edit Student</h2>
-                        <p class="text-xs text-blue-200">Update student details</p>
-                    </div>
-                </div>
-                <button type="button" onclick="closeEditModal({ force: true })"
-                        class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition">
-                    <i class="fas fa-times text-lg"></i>
-                </button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit Student</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <form method="POST" id="editStudentForm" action="" enctype="multipart/form-data" class="p-8">
+            <form method="POST" id="editStudentForm" action="" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
-                <div id="editCurrentImage" class="hidden mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-image text-blue-500 mr-1"></i> Current Image
-                    </label>
-                    <div class="flex items-center gap-4">
-                        <img id="editCurrentImagePreview" src=""
-                             class="w-20 h-20 rounded-full object-cover ring-4 ring-blue-100">
-                        <p class="text-sm text-gray-500">Current profile image</p>
-                    </div>
-                </div>
+                <div class="modal-body">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    {{-- NAME --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user text-blue-500 mr-1"></i> Full Name *
-                        </label>
-                        <input type="text" name="name" id="edit_name" required
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition">
-                    </div>
-
-                    {{-- EMAIL --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-envelope text-blue-500 mr-1"></i> Email *
-                        </label>
-                        <input type="email" name="email" id="edit_email" required
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition">
-                    </div>
-
-                    {{-- PHONE FIXED — only ONE input now  --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-phone text-blue-500 mr-1"></i> Phone *
-                        </label>
-                        <input type="text" 
-                               name="phone" 
-                               id="edit_phone" 
-                               required
-                               pattern="[0-9]{10}"
-                               maxlength="10"
-                               title="Please enter exactly 10 digits"
-                               inputmode="numeric"
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition">
-                    </div>
-
-                    {{-- COURSE --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-book text-blue-500 mr-1"></i> Course *
-                        </label>
-                        <input type="text" name="course" id="edit_course" required
-                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition">
-                    </div>
-
-                    {{-- STATUS --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-flag text-blue-500 mr-1"></i> Status *
-                        </label>
-                        <select name="status" id="edit_status" required
-                                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition">
-                            <option value="active">🟢 Active</option>
-                            <option value="inactive">🟡 Inactive</option>
-                            <option value="graduated">🔵 Graduated</option>
-                            <option value="suspended">🔴 Suspended</option>
-                        </select>
-                    </div>
-
-                    {{-- IMAGE --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-image text-blue-500 mr-1"></i> New Profile Image
-                        </label>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
-                            <input type="file" name="image" id="edit_imageInput" accept="image/*"
-                                   class="hidden" onchange="showEditFileName()">
-                            <label for="edit_imageInput" class="cursor-pointer">
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-500">Click to upload new image</p>
-                                <p class="text-xs text-gray-400 mt-1">Leave empty to keep current</p>
-                            </label>
-                            <p id="edit_fileName" class="text-sm text-blue-600 font-medium mt-2"></p>
+                    <div id="editCurrentImage" class="d-none mb-3">
+                        <label class="form-label"><i class="fas fa-image text-primary me-1"></i> Current Image</label>
+                        <div>
+                            <img id="editCurrentImagePreview" src="" alt="Current image"
+                                 class="rounded-circle object-fit-cover" style="width:80px;height:80px">
                         </div>
                     </div>
 
-                    {{-- ADDRESS --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map-marker-alt text-blue-500 mr-1"></i> Address
-                        </label>
-                        <textarea name="address" id="edit_address" rows="3"
-                                  class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition"></textarea>
-                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-user text-primary me-1"></i> Full Name *</label>
+                            <input type="text" name="name" id="edit_name" class="form-control" required>
+                        </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-envelope text-primary me-1"></i> Email *</label>
+                            <input type="email" name="email" id="edit_email" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-phone text-primary me-1"></i> Phone *</label>
+                            <input type="text" name="phone" id="edit_phone" class="form-control"
+                                   pattern="[0-9]{10}" maxlength="10" inputmode="numeric"
+                                   title="Please enter exactly 10 digits" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-book text-primary me-1"></i> Course *</label>
+                            <input type="text" name="course" id="edit_course" class="form-control" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-flag text-primary me-1"></i> Status *</label>
+                            <select name="status" id="edit_status" class="form-select" required>
+                                @foreach($statuses as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-image text-primary me-1"></i> New Profile Image</label>
+                            <input type="file" name="image" id="edit_imageInput" class="form-control" accept="image/*">
+                            <div class="form-text">Leave empty to keep current</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label"><i class="fas fa-map-marker-alt text-primary me-1"></i> Address</label>
+                            <textarea name="address" id="edit_address" rows="3" class="form-control"></textarea>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex gap-3 mt-8 pt-6 border-t border-gray-100">
-                    <button type="submit"
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium flex items-center gap-2 transition shadow-lg shadow-blue-200">
-                        <i class="fas fa-save"></i> Update Student
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
                     </button>
-                    <button type="button" onclick="closeEditModal({ force: true })"
-                            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-lg font-medium transition">
-                        Cancel
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Student
                     </button>
                 </div>
             </form>
 
         </div>
     </div>
-
+</div>
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const courseCanvas = document.getElementById('courseStudentsChart');
-        const statusCanvas = document.getElementById('studentStatusChart');
+document.addEventListener('DOMContentLoaded', function () {
 
-        if (courseCanvas) {
-            new Chart(courseCanvas, {
-                type: 'bar',
-                data: {
-                    labels: @json($courseStats->pluck('course')),
-                    datasets: [{
-                        label: 'Students',
-                        data: @json($courseStats->pluck('total')),
-                        backgroundColor: '#5865d8',
-                        borderRadius: 7,
-                        maxBarThickness: 44
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: true }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#667085' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0, color: '#667085' },
-                            grid: { color: '#edf0f5' }
-                        }
-                    }
-                }
-            });
-        }
+        document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const d = btn.dataset;
 
-        if (statusCanvas) {
-            new Chart(statusCanvas, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Active', 'Inactive', 'Graduated', 'Suspended'],
-                    datasets: [{
-                        data: [
-                            @json($stats['active']),
-                            @json($stats['inactive'] ?? 0),
-                            @json($stats['graduated']),
-                            @json($stats['suspended'] ?? 0)
-                        ],
-                        backgroundColor: ['#16a36a', '#e8a317', '#3976df', '#dc4b4b'],
-                        borderColor: '#ffffff',
-                        borderWidth: 3,
-                        hoverOffset: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { usePointStyle: true, padding: 18, color: '#526078' }
-                        }
-                    }
-                }
-            });
-        }
-    });
-</script>
-<script>
-    //  ADD MODAL 
-    function openAddModal() {
-        const modal = document.getElementById('addStudentModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => {
-                const firstInput = modal.querySelector('input[name="name"]');
-                if (firstInput) firstInput.focus();
-            }, 100);
-        }
-    }
+            document.getElementById('viewName').textContent = d.name;
+            document.getElementById('viewEmail').textContent = d.email;
+            document.getElementById('viewPhone').textContent = d.phone;
+            document.getElementById('viewCourse').textContent = d.course;
+            document.getElementById('viewAddress').textContent = d.address || 'No address provided';
+            document.getElementById('viewCreated').textContent = d.created;
 
-    function closeAddModal(event) {
-        if (event && event.force) {
-            document.getElementById('addStudentModal').classList.add('hidden');
-            document.body.style.overflow = '';
-            return;
-        }
-        if (event && event.target.id !== 'addStudentModal') return;
-        document.getElementById('addStudentModal').classList.add('hidden');
-        document.body.style.overflow = '';
-    }
+            // Status badge
+            const statusEl = document.getElementById('viewStatus');
+            statusEl.textContent = d.statusLabel;
+            statusEl.className = 'badge rounded-pill ' + d.statusBadge;
 
-    function showCreateFileName() {
-        const input = document.getElementById('create_imageInput');
-        const fileName = document.getElementById('create_fileName');
-        if (input && input.files && input.files[0]) {
-            fileName.textContent = '✅ ' + input.files[0].name;
-        }
-    }
+            // Image or initial
+            const imgWrap = document.getElementById('viewImageWrap');
+            const initialWrap = document.getElementById('viewInitialWrap');
 
-    // EDIT MODAL 
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const student = {
-                    id:      this.dataset.id,
-                    name:    this.dataset.name,
-                    email:   this.dataset.email,
-                    phone:   this.dataset.phone,
-                    course:  this.dataset.course,
-                    status:  this.dataset.status,
-                    address: this.dataset.address,
-                    image:   this.dataset.image,
-                };
-                openEditModal(student);
-            });
+            if (d.image && d.image.trim() !== '') {
+                document.getElementById('viewImage').src = d.image;
+                imgWrap.classList.remove('d-none');
+                initialWrap.classList.add('d-none');
+            } else {
+                document.getElementById('viewInitial').textContent = d.name.charAt(0).toUpperCase();
+                imgWrap.classList.add('d-none');
+                initialWrap.classList.remove('d-none');
+            }
+
+            // Store ID for Edit
+            document.getElementById('viewEditBtn').dataset.id = d.id;
         });
     });
 
-    function openEditModal(student) {
-        const modal = document.getElementById('editStudentModal');
-        if (!modal) return;
+    //VIEW MODAL — Edit Button 
+    document.getElementById('viewEditBtn').addEventListener('click', function () {
+        const id = this.dataset.id;
 
-        document.getElementById('edit_name').value = student.name;
-        document.getElementById('edit_email').value = student.email;
-        document.getElementById('edit_phone').value = student.phone;
-        document.getElementById('edit_course').value = student.course;
-        document.getElementById('edit_status').value = student.status;
-        document.getElementById('edit_address').value = student.address || '';
-        document.getElementById('editStudentForm').action = `/students/${student.id}`;
+        // Close view modal
+        const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewStudentModal'));
+        if (viewModal) viewModal.hide();
 
-        const imageSection = document.getElementById('editCurrentImage');
-        const imagePreview = document.getElementById('editCurrentImagePreview');
-        if (student.image && student.image.trim() !== '') {
-            imagePreview.src = student.image;
-            imageSection.classList.remove('hidden');
-        } else {
-            imageSection.classList.add('hidden');
-        }
-
-        const fileInput = document.getElementById('edit_imageInput');
-        if (fileInput) fileInput.value = '';
-        document.getElementById('edit_fileName').textContent = '';
-
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-
-        setTimeout(() => document.getElementById('edit_name').focus(), 100);
-    }
-
-    function closeEditModal(event) {
-        if (event && event.force) {
-            document.getElementById('editStudentModal').classList.add('hidden');
-            document.body.style.overflow = '';
-            return;
-        }
-        if (event && event.target.id !== 'editStudentModal') return;
-        document.getElementById('editStudentModal').classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-
-    function showEditFileName() {
-        const input = document.getElementById('edit_imageInput');
-        const fileName = document.getElementById('edit_fileName');
-        if (input && input.files && input.files[0]) {
-            fileName.textContent = '✅ ' + input.files[0].name;
-        }
-    }
-
-    //  ESC KEY 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const addModal = document.getElementById('addStudentModal');
-            const editModal = document.getElementById('editStudentModal');
-            if (addModal && !addModal.classList.contains('hidden')) {
-                closeAddModal({ force: true });
+        // Open edit modal
+        setTimeout(() => {
+            const editBtn = document.querySelector('.edit-btn[data-id="' + id + '"]');
+            if (editBtn) {
+                editBtn.click();
             }
-            if (editModal && !editModal.classList.contains('hidden')) {
-                closeEditModal({ force: true });
-            }
-        }
+        }, 350);
     });
 
-    // Auto-open Add modal if validation failed
+    // EDIT MODAL — Data Fill
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const s = btn.dataset;
+
+            document.getElementById('edit_name').value = s.name;
+            document.getElementById('edit_email').value = s.email;
+            document.getElementById('edit_phone').value = s.phone;
+            document.getElementById('edit_course').value = s.course;
+            document.getElementById('edit_status').value = s.status;
+            document.getElementById('edit_address').value = s.address || '';
+            document.getElementById('edit_imageInput').value = '';
+            document.getElementById('editStudentForm').action = `/students/${s.id}`;
+
+            const wrap = document.getElementById('editCurrentImage');
+            if (s.image) {
+                document.getElementById('editCurrentImagePreview').src = s.image;
+                wrap.classList.remove('d-none');
+            } else {
+                wrap.classList.add('d-none');
+            }
+        });
+    });
+
+  
     @if($errors->any() && !old('_method'))
-        document.addEventListener('DOMContentLoaded', function() {
-            openAddModal();
-        });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('addStudentModal')).show();
     @endif
+});
 </script>
 @endpush
