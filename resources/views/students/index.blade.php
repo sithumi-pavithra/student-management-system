@@ -22,7 +22,7 @@
 @section('content')
 <div class="container py-4">
 
-    
+    {{-- HEADER --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <h1 class="h2 fw-bold mb-1">Students List</h1>
@@ -35,10 +35,12 @@
                     <span class="badge bg-light text-dark">{{ $stats['trashed'] }}</span>
                 @endif
             </a>
-            <button type="button" class="btn btn-primary btn-sm"
-                    data-bs-toggle="modal" data-bs-target="#addStudentModal">
+
+            {{-- Create button (same modal as Edit) --}}
+            <button type="button" class="btn btn-primary btn-sm" id="createStudentBtn">
                 <i class="fas fa-plus"></i> Add New Student
             </button>
+
             <a href="{{ route('students.export', request()->query()) }}" class="btn btn-success btn-sm">
                 <i class="fas fa-download"></i> Export CSV
             </a>
@@ -65,7 +67,7 @@
         @endforeach
     </div>
 
-   
+    {{-- SEARCH + FILTER + TABLE --}}
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex flex-column flex-lg-row justify-content-between gap-3 py-3">
             <div>
@@ -114,7 +116,23 @@
                 </thead>
                 <tbody>
                 @forelse($students as $student)
-                    <tr>
+                    @php
+                        // ALL student data lives in ONE attribute on the <tr>
+                        $payload = [
+                            'id'           => $student->id,
+                            'name'         => $student->name,
+                            'email'        => $student->email,
+                            'phone'        => $student->phone,
+                            'course'       => $student->course,
+                            'status'       => $student->status,
+                            'status_label' => $student->status_label,
+                            'status_badge' => $student->status_badge_class,
+                            'address'      => $student->address,
+                            'image'        => $student->image ? asset('storage/' . $student->image) : '',
+                            'created'      => $student->created_at->format('M d, Y'),
+                        ];
+                    @endphp
+                    <tr data-student="{{ json_encode($payload) }}">
                         <td class="text-muted">{{ $students->firstItem() + $loop->index }}</td>
                         <td>
                             <div class="d-flex align-items-center gap-3">
@@ -129,22 +147,8 @@
                                     </div>
                                 @endif
                                 <div>
-                                    {{-- Name click → View Modal --}}
                                     <button type="button"
-                                            class="btn btn-link p-0 fw-semibold text-decoration-none view-btn"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#viewStudentModal"
-                                            data-id="{{ $student->id }}"
-                                            data-name="{{ $student->name }}"
-                                            data-email="{{ $student->email }}"
-                                            data-phone="{{ $student->phone }}"
-                                            data-course="{{ $student->course }}"
-                                            data-status="{{ $student->status }}"
-                                            data-status-label="{{ $student->status_label }}"
-                                            data-status-badge="{{ $student->status_badge_class }}"
-                                            data-address="{{ $student->address }}"
-                                            data-image="{{ $student->image ? asset('storage/' . $student->image) : '' }}"
-                                            data-created="{{ $student->created_at->format('M d, Y') }}">
+                                            class="btn btn-link p-0 fw-semibold text-decoration-none view-btn">
                                         {{ $student->name }}
                                     </button>
                                     <div class="small text-muted">{{ $student->email }}</div>
@@ -160,42 +164,14 @@
                         </td>
                         <td>
                             <div class="d-flex gap-2">
-                                
-                                <button type="button" class="btn btn-outline-info btn-sm view-btn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#viewStudentModal"
-                                        data-id="{{ $student->id }}"
-                                        data-name="{{ $student->name }}"
-                                        data-email="{{ $student->email }}"
-                                        data-phone="{{ $student->phone }}"
-                                        data-course="{{ $student->course }}"
-                                        data-status="{{ $student->status }}"
-                                        data-status-label="{{ $student->status_label }}"
-                                        data-status-badge="{{ $student->status_badge_class }}"
-                                        data-address="{{ $student->address }}"
-                                        data-image="{{ $student->image ? asset('storage/' . $student->image) : '' }}"
-                                        data-created="{{ $student->created_at->format('M d, Y') }}"
-                                        title="View">
+                                <button type="button" class="btn btn-outline-info btn-sm view-btn" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
 
-                                
-                                <button type="button" class="btn btn-outline-primary btn-sm edit-btn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#editStudentModal"
-                                        data-id="{{ $student->id }}"
-                                        data-name="{{ $student->name }}"
-                                        data-email="{{ $student->email }}"
-                                        data-phone="{{ $student->phone }}"
-                                        data-course="{{ $student->course }}"
-                                        data-status="{{ $student->status }}"
-                                        data-address="{{ $student->address }}"
-                                        data-image="{{ $student->image ? asset('storage/' . $student->image) : '' }}"
-                                        title="Edit">
+                                <button type="button" class="btn btn-outline-primary btn-sm edit-btn" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
 
-                               
                                 <form method="POST"
                                       action="{{ route('students.destroy', $student->id) }}"
                                       onsubmit="return confirm('Move to trash?')">
@@ -226,20 +202,19 @@
     </div>
 </div>
 
+{{-- ============================================================
+     VIEW MODAL
+     ============================================================ --}}
 <div class="modal fade" id="viewStudentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
 
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-circle me-2"></i>Student Details
-                </h5>
+                <h5 class="modal-title"><i class="fas fa-user-circle me-2"></i>Student Details</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body">
-
-                
                 <div class="text-center mb-4">
                     <div id="viewImageWrap">
                         <img id="viewImage" src="" alt="Student"
@@ -249,38 +224,31 @@
                     <div id="viewInitialWrap" class="d-none">
                         <div id="viewInitial"
                              class="rounded-circle bg-info text-white d-inline-flex align-items-center justify-content-center fw-bold"
-                             style="width:100px;height:100px;font-size:2.5rem">
-                            A
-                        </div>
+                             style="width:100px;height:100px;font-size:2.5rem">A</div>
                     </div>
                     <h4 id="viewName" class="mt-3 mb-1 fw-bold">Student Name</h4>
                     <p id="viewEmail" class="text-muted small mb-2">student@example.com</p>
                     <span id="viewStatus" class="badge rounded-pill">Status</span>
                 </div>
 
-                
                 <div>
                     <div class="student-detail-item">
                         <span class="label"><i class="fas fa-phone"></i>Phone</span>
                         <span id="viewPhone" class="value">-</span>
                     </div>
-
                     <div class="student-detail-item">
                         <span class="label"><i class="fas fa-book"></i>Course</span>
                         <span id="viewCourse" class="value">-</span>
                     </div>
-
                     <div class="student-detail-item">
                         <span class="label"><i class="fas fa-map-marker-alt"></i>Address</span>
                         <span id="viewAddress" class="value text-end" style="max-width:60%">-</span>
                     </div>
-
                     <div class="student-detail-item">
                         <span class="label"><i class="far fa-calendar"></i>Registered</span>
                         <span id="viewCreated" class="value">-</span>
                     </div>
                 </div>
-
             </div>
 
             <div class="modal-footer">
@@ -291,166 +259,96 @@
                     <i class="fas fa-edit"></i> Edit
                 </button>
             </div>
-
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+{{-- ============================================================
+     ONE MODAL FOR CREATE + EDIT  (AJAX submit)
+     ============================================================ --}}
+<div class="modal fade" id="studentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content">
 
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-plus me-2"></i>Add New Student
-                </h5>
+                <h5 class="modal-title" id="studentModalTitle"></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            <form method="POST" action="{{ route('students.store') }}" enctype="multipart/form-data">
+            <form id="studentForm" enctype="multipart/form-data" novalidate>
                 @csrf
+                <input type="hidden" name="student_id" id="student_id">
 
                 <div class="modal-body">
 
-                    @if($errors->any() && !old('_method'))
-                        <div class="alert alert-danger">
-                            <strong><i class="fas fa-exclamation-circle me-1"></i>Please fix the following errors:</strong>
-                            <ul class="mb-0 mt-2">
-                                @foreach($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+                    {{-- General (non-field) errors --}}
+                    <div class="alert alert-danger d-none" id="formErrors"></div>
 
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label"><i class="fas fa-user text-primary me-1"></i> Full Name *</label>
-                            <input type="text" name="name" value="{{ old('name') }}"
-                                   class="form-control" placeholder="Enter student name" required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label"><i class="fas fa-envelope text-primary me-1"></i> Email *</label>
-                            <input type="email" name="email" value="{{ old('email') }}"
-                                   class="form-control" placeholder="student@example.com" required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label"><i class="fas fa-phone text-primary me-1"></i> Phone *</label>
-                            <input type="text" name="phone" value="{{ old('phone') }}"
-                                   class="form-control" placeholder="0712345678"
-                                   pattern="[0-9]{10}" maxlength="10" inputmode="numeric"
-                                   title="Please enter exactly 10 digits" required>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label"><i class="fas fa-book text-primary me-1"></i> Course *</label>
-                            <input type="text" name="course" value="{{ old('course') }}"
-                                   class="form-control" placeholder="e.g., HNDIT, HNDA" required>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label"><i class="fas fa-flag text-primary me-1"></i> Status *</label>
-                            <select name="status" class="form-select" required>
-                                @foreach($statuses as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('status', 'active') === $value)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label"><i class="fas fa-image text-primary me-1"></i> Profile Image</label>
-                            <input type="file" name="image" class="form-control" accept="image/*">
-                            <div class="form-text">JPG, PNG up to 2MB</div>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label"><i class="fas fa-map-marker-alt text-primary me-1"></i> Address</label>
-                            <textarea name="address" rows="3" class="form-control"
-                                      placeholder="Enter address">{{ old('address') }}</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Student
-                    </button>
-                </div>
-            </form>
-
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit Student</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <form method="POST" id="editStudentForm" action="" enctype="multipart/form-data">
-                @csrf
-                @method('PUT')
-
-                <div class="modal-body">
-
-                    <div id="editCurrentImage" class="d-none mb-3">
+                    {{-- Current image (edit mode only) --}}
+                    <div id="currentImageWrap" class="d-none mb-3">
                         <label class="form-label"><i class="fas fa-image text-primary me-1"></i> Current Image</label>
                         <div>
-                            <img id="editCurrentImagePreview" src="" alt="Current image"
+                            <img id="currentImagePreview" src="" alt="Current image"
                                  class="rounded-circle object-fit-cover" style="width:80px;height:80px">
                         </div>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label"><i class="fas fa-user text-primary me-1"></i> Full Name *</label>
-                            <input type="text" name="name" id="edit_name" class="form-control" required>
+                            <label class="form-label" for="f_name"><i class="fas fa-user text-primary me-1"></i> Full Name *</label>
+                            <input type="text" name="name" id="f_name" class="form-control"
+                                   placeholder="Enter student name" required>
+                            <div class="invalid-feedback" data-error-for="name"></div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label"><i class="fas fa-envelope text-primary me-1"></i> Email *</label>
-                            <input type="email" name="email" id="edit_email" class="form-control" required>
+                            <label class="form-label" for="f_email"><i class="fas fa-envelope text-primary me-1"></i> Email *</label>
+                            <input type="email" name="email" id="f_email" class="form-control"
+                                   placeholder="student@example.com" required>
+                            <div class="invalid-feedback" data-error-for="email"></div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label"><i class="fas fa-phone text-primary me-1"></i> Phone *</label>
-                            <input type="text" name="phone" id="edit_phone" class="form-control"
+                            <label class="form-label" for="f_phone"><i class="fas fa-phone text-primary me-1"></i> Phone *</label>
+                            <input type="text" name="phone" id="f_phone" class="form-control"
+                                   placeholder="0712345678"
                                    pattern="[0-9]{10}" maxlength="10" inputmode="numeric"
                                    title="Please enter exactly 10 digits" required>
+                            <div class="invalid-feedback" data-error-for="phone"></div>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label"><i class="fas fa-book text-primary me-1"></i> Course *</label>
-                            <input type="text" name="course" id="edit_course" class="form-control" required>
+                            <label class="form-label" for="f_course"><i class="fas fa-book text-primary me-1"></i> Course *</label>
+                            <input type="text" name="course" id="f_course" class="form-control"
+                                   placeholder="e.g., HNDIT, HNDA" required>
+                            <div class="invalid-feedback" data-error-for="course"></div>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label"><i class="fas fa-flag text-primary me-1"></i> Status *</label>
-                            <select name="status" id="edit_status" class="form-select" required>
+                            <label class="form-label" for="f_status"><i class="fas fa-flag text-primary me-1"></i> Status *</label>
+                            <select name="status" id="f_status" class="form-select" required>
                                 @foreach($statuses as $value => $label)
                                     <option value="{{ $value }}">{{ $label }}</option>
                                 @endforeach
                             </select>
+                            <div class="invalid-feedback" data-error-for="status"></div>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label"><i class="fas fa-image text-primary me-1"></i> New Profile Image</label>
-                            <input type="file" name="image" id="edit_imageInput" class="form-control" accept="image/*">
-                            <div class="form-text">Leave empty to keep current</div>
+                            <label class="form-label" for="f_image">
+                                <i class="fas fa-image text-primary me-1"></i>
+                                <span id="imageLabel">Profile Image</span>
+                            </label>
+                            <input type="file" name="image" id="f_image" class="form-control" accept="image/*">
+                            <div class="form-text" id="imageHelp">JPG, PNG up to 2MB</div>
+                            <div class="invalid-feedback" data-error-for="image"></div>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label"><i class="fas fa-map-marker-alt text-primary me-1"></i> Address</label>
-                            <textarea name="address" id="edit_address" rows="3" class="form-control"></textarea>
+                            <label class="form-label" for="f_address"><i class="fas fa-map-marker-alt text-primary me-1"></i> Address</label>
+                            <textarea name="address" id="f_address" rows="3" class="form-control"
+                                      placeholder="Enter address"></textarea>
+                            <div class="invalid-feedback" data-error-for="address"></div>
                         </div>
                     </div>
                 </div>
@@ -459,8 +357,8 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times"></i> Cancel
                     </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Update Student
+                    <button type="submit" class="btn btn-primary" id="saveBtn">
+                        <i class="fas fa-save"></i> <span id="saveBtnText">Save Student</span>
                     </button>
                 </div>
             </form>
@@ -474,27 +372,185 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-        document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const d = btn.dataset;
+    const csrfToken   = document.querySelector('meta[name="csrf-token"]').content;
+    const storeUrl    = @json(route('students.store'));
+    const baseUrl     = @json(url('students'));      // /students
 
-            document.getElementById('viewName').textContent = d.name;
-            document.getElementById('viewEmail').textContent = d.email;
-            document.getElementById('viewPhone').textContent = d.phone;
-            document.getElementById('viewCourse').textContent = d.course;
+    const studentModalEl = document.getElementById('studentModal');
+    const studentModal   = bootstrap.Modal.getOrCreateInstance(studentModalEl);
+    const viewModalEl    = document.getElementById('viewStudentModal');
+    const viewModal      = bootstrap.Modal.getOrCreateInstance(viewModalEl);
+
+    const form        = document.getElementById('studentForm');
+    const saveBtn     = document.getElementById('saveBtn');
+    const saveBtnText = document.getElementById('saveBtnText');
+    const generalErr  = document.getElementById('formErrors');
+
+    let viewedStudent = null;
+
+    // ---------- helpers ----------
+    const studentFromRow = el => JSON.parse(el.closest('tr').dataset.student);
+
+    function clearErrors() {
+        generalErr.classList.add('d-none');
+        generalErr.innerHTML = '';
+        form.querySelectorAll('.is-invalid').forEach(i => i.classList.remove('is-invalid'));
+        form.querySelectorAll('.invalid-feedback').forEach(d => d.textContent = '');
+    }
+
+    function showErrors(errors) {
+        const general = [];
+        Object.entries(errors).forEach(([field, messages]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            const box   = form.querySelector(`[data-error-for="${field}"]`);
+            if (input && box) {
+                input.classList.add('is-invalid');
+                box.textContent = messages[0];
+            } else {
+                general.push(messages[0]);
+            }
+        });
+        if (general.length) {
+            generalErr.innerHTML = general.map(m => `<div>${m}</div>`).join('');
+            generalErr.classList.remove('d-none');
+        }
+    }
+
+    // ---------- open modal: CREATE or EDIT ----------
+    function openStudentModal(student = null) {
+        form.reset();
+        clearErrors();
+
+        const isEdit = student !== null;
+        document.getElementById('student_id').value = isEdit ? student.id : '';
+
+        document.getElementById('studentModalTitle').innerHTML = isEdit
+            ? '<i class="fas fa-user-edit me-2"></i>Edit Student'
+            : '<i class="fas fa-user-plus me-2"></i>Add New Student';
+
+        saveBtnText.textContent = isEdit ? 'Update Student' : 'Save Student';
+        document.getElementById('imageLabel').textContent = isEdit ? 'New Profile Image' : 'Profile Image';
+        document.getElementById('imageHelp').textContent  = isEdit ? 'Leave empty to keep current' : 'JPG, PNG up to 2MB';
+
+        const imgWrap = document.getElementById('currentImageWrap');
+
+        if (isEdit) {
+            form.name.value    = student.name;
+            form.email.value   = student.email;
+            form.phone.value   = student.phone;
+            form.course.value  = student.course;
+            form.status.value  = student.status;
+            form.address.value = student.address || '';
+
+            if (student.image) {
+                document.getElementById('currentImagePreview').src = student.image;
+                imgWrap.classList.remove('d-none');
+            } else {
+                imgWrap.classList.add('d-none');
+            }
+        } else {
+            form.status.value = 'active';
+            imgWrap.classList.add('d-none');
+        }
+
+        studentModal.show();
+    }
+
+    // Create button
+    document.getElementById('createStudentBtn').addEventListener('click', () => openStudentModal());
+
+    // Edit buttons
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => openStudentModal(studentFromRow(btn)));
+    });
+
+    // Focus first field when modal is shown
+    studentModalEl.addEventListener('shown.bs.modal', () => form.name.focus());
+
+    // ---------- SUBMIT (AJAX) ----------
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        clearErrors();
+
+        const id       = document.getElementById('student_id').value;
+        const formData = new FormData(form);
+        let   url      = storeUrl;
+
+        if (id) {                                   // EDIT -> PUT /students/{id}
+            url = `${baseUrl}/${id}`;
+            formData.append('_method', 'PUT');
+        }
+
+        saveBtn.disabled = true;
+        saveBtnText.textContent = 'Sending...';
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (res.status === 422) {                // validation errors
+                const data = await res.json();
+                showErrors(data.errors || {});
+                return;
+            }
+
+            if (res.status === 419) {                // session / CSRF expired
+                generalErr.textContent = 'Session expired. Please refresh the page and try again.';
+                generalErr.classList.remove('d-none');
+                return;
+            }
+
+            if (!res.ok) {
+                generalErr.textContent = 'Something went wrong. Please try again.';
+                generalErr.classList.remove('d-none');
+                return;
+            }
+
+            studentModal.hide();
+            window.location.reload();                // flash message shown by layout
+
+        } catch (err) {
+            generalErr.textContent = 'Network error. Please check your connection.';
+            generalErr.classList.remove('d-none');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtnText.textContent = id ? 'Update Student' : 'Save Student';
+        }
+    });
+
+    // ---------- VIEW modal ----------
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const d = viewedStudent = studentFromRow(btn);
+
+            document.getElementById('viewName').textContent    = d.name;
+            document.getElementById('viewEmail').textContent   = d.email;
+            document.getElementById('viewPhone').textContent   = d.phone;
+            document.getElementById('viewCourse').textContent  = d.course;
             document.getElementById('viewAddress').textContent = d.address || 'No address provided';
             document.getElementById('viewCreated').textContent = d.created;
 
-            // Status badge
             const statusEl = document.getElementById('viewStatus');
-            statusEl.textContent = d.statusLabel;
-            statusEl.className = 'badge rounded-pill ' + d.statusBadge;
+            statusEl.textContent = d.status_label;
+            statusEl.className   = 'badge rounded-pill ' + d.status_badge;
 
-            // Image or initial
-            const imgWrap = document.getElementById('viewImageWrap');
+            const imgWrap     = document.getElementById('viewImageWrap');
             const initialWrap = document.getElementById('viewInitialWrap');
 
-            if (d.image && d.image.trim() !== '') {
+            if (d.image) {
                 document.getElementById('viewImage').src = d.image;
                 imgWrap.classList.remove('d-none');
                 initialWrap.classList.add('d-none');
@@ -504,56 +560,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 initialWrap.classList.remove('d-none');
             }
 
-            // Store ID for Edit
-            document.getElementById('viewEditBtn').dataset.id = d.id;
+            viewModal.show();
         });
     });
 
-    //VIEW MODAL — Edit Button 
+    // View modal -> Edit button: close view, then open the shared edit modal
     document.getElementById('viewEditBtn').addEventListener('click', function () {
-        const id = this.dataset.id;
-
-        // Close view modal
-        const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewStudentModal'));
-        if (viewModal) viewModal.hide();
-
-        // Open edit modal
-        setTimeout(() => {
-            const editBtn = document.querySelector('.edit-btn[data-id="' + id + '"]');
-            if (editBtn) {
-                editBtn.click();
-            }
-        }, 350);
+        const student = viewedStudent;
+        viewModalEl.addEventListener('hidden.bs.modal', () => openStudentModal(student), { once: true });
+        viewModal.hide();
     });
-
-    // EDIT MODAL — Data Fill
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const s = btn.dataset;
-
-            document.getElementById('edit_name').value = s.name;
-            document.getElementById('edit_email').value = s.email;
-            document.getElementById('edit_phone').value = s.phone;
-            document.getElementById('edit_course').value = s.course;
-            document.getElementById('edit_status').value = s.status;
-            document.getElementById('edit_address').value = s.address || '';
-            document.getElementById('edit_imageInput').value = '';
-            document.getElementById('editStudentForm').action = `/students/${s.id}`;
-
-            const wrap = document.getElementById('editCurrentImage');
-            if (s.image) {
-                document.getElementById('editCurrentImagePreview').src = s.image;
-                wrap.classList.remove('d-none');
-            } else {
-                wrap.classList.add('d-none');
-            }
-        });
-    });
-
-  
-    @if($errors->any() && !old('_method'))
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('addStudentModal')).show();
-    @endif
 });
 </script>
 @endpush

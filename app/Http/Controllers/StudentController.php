@@ -11,25 +11,11 @@ class StudentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Student::query();
+        $students = $this->filteredQuery($request)
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
-
-        if ($course = $request->input('course')) {
-            $query->where('course', $course);
-        }
-
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        $students = $query->latest()->paginate(10)->withQueryString();
         $courses = Student::query()->distinct()->orderBy('course')->pluck('course');
 
         $stats = [
@@ -46,25 +32,7 @@ class StudentController extends Controller
 
     public function export(Request $request): StreamedResponse
     {
-        $query = Student::query();
-
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
-
-        if ($course = $request->input('course')) {
-            $query->where('course', $course);
-        }
-
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
-        $students = $query->orderBy('name')->get();
+        $students = $this->filteredQuery($request)->orderBy('name')->get();
 
         return response()->streamDownload(function () use ($students) {
             $file = fopen('php://output', 'w');
@@ -92,15 +60,7 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:students,email',
-            'phone'    => 'required|digits:10',
-            'course'   => 'required|string|max:255',
-            'status'   => 'required|in:active,inactive,graduated,suspended',
-            'image'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'address'  => 'nullable|string',
-        ]);
+        $validated = $request->validate($this->rules());
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('students', 'public');
@@ -108,23 +68,14 @@ class StudentController extends Controller
 
         Student::create($validated);
 
-        return redirect()->route('students.index')
-            ->with('success', 'Student added successfully!');
+        return $this->respond($request, 'Student added successfully!');
     }
 
     public function update(Request $request, $id)
     {
         $student = Student::findOrFail($id);
 
-        $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:students,email,' . $id,
-            'phone'    => 'required|digits:10',
-            'course'   => 'required|string|max:255',
-            'status'   => 'required|in:active,inactive,graduated,suspended',
-            'image'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'address'  => 'nullable|string',
-        ]);
+        $validated = $request->validate($this->rules($id));
 
         if ($request->hasFile('image')) {
             if ($student->image) {
@@ -136,8 +87,7 @@ class StudentController extends Controller
 
         $student->update($validated);
 
-        return redirect()->route('students.index')
-            ->with('success', 'Student updated successfully!');
+        return $this->respond($request, 'Student updated successfully!');
     }
 
     public function destroy($id)
@@ -177,5 +127,66 @@ class StudentController extends Controller
 
         return redirect()->route('students.trash')
             ->with('success', 'Student permanently deleted!');
+    }
+
+    /* ----------------------------------------------------------------
+     |  Helpers
+     | ---------------------------------------------------------------- */
+
+    /**
+     * Search + course + status filters (shared by index and export).
+     */
+    private function filteredQuery(Request $request)
+    {
+        $query = Student::query();
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($course = $request->input('course')) {
+            $query->where('course', $course);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Validation rules (shared by store and update).
+     */
+    private function rules($ignoreId = null): array
+    {
+        return [
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email|unique:students,email' . ($ignoreId ? ',' . $ignoreId : ''),
+            'phone'   => 'required|digits:10',
+            'course'  => 'required|string|max:255',
+            'status'  => 'required|in:active,inactive,graduated,suspended',
+            'image'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'address' => 'nullable|string',
+        ];
+    }
+
+    /**
+     * AJAX request  -> JSON (flash message is shown after the JS reloads the page)
+     * Normal request -> redirect back to the list.
+     */
+    private function respond(Request $request, string $message)
+    {
+        if ($request->expectsJson()) {
+            session()->flash('success', $message);
+
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return redirect()->route('students.index')->with('success', $message);
     }
 }
