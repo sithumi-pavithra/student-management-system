@@ -104,9 +104,19 @@
             top: 0;
             z-index: 10;
         }
+        /* The <form> sits between .modal-content and .modal-body, so it must be
+           a flex column too - otherwise the body can't shrink/scroll and the
+           bottom fields (Address) get cut off in the taller Edit form. */
+        .modal-content > form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
         .modal-body {
             overflow-y: auto;
             flex: 1 1 auto;
+            min-height: 0;
         }
         .modal-footer {
             flex-shrink: 0;
